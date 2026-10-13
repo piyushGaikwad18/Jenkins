@@ -1,10 +1,12 @@
+
 pipeline {
     agent any
-Jenkinsfile at the root level of your repository and commit the following code:
+
     tools {
-        maven 'Maven-3.9'
         jdk 'JDK-17'
+        maven 'Maven-3.9'
     }
+
     stages {
         stage('1. Checkout Code') {
             steps {
@@ -12,16 +14,18 @@ Jenkinsfile at the root level of your repository and commit the following code:
                 checkout scm
             }
         }
+
         stage('2. Build') {
             steps {
                 echo 'Compiling the Java application...'
-                sh 'mvn clean compile'
+                bat 'mvn clean compile'
             }
         }
+
         stage('3. Unit Test') {
             steps {
                 echo 'Running unit tests...'
-                sh 'mvn test'
+                bat 'mvn test'
             }
             post {
                 always {
@@ -29,26 +33,36 @@ Jenkinsfile at the root level of your repository and commit the following code:
                 }
             }
         }
+
         stage('4. Package') {
             steps {
                 echo 'Packaging application into JAR/WAR...'
-                sh 'mvn package -DskipTests'
+                bat 'mvn package -DskipTests'
             }
         }
+
         stage('5. Deploy') {
             steps {
                 echo 'Deploying application artifact...'
-                sh '''
-                    echo "Deploying target file to destination server..."
-                    cp target/*.jar /tmp/deployed-app.jar || true
-                    echo "Deployment completed successfully."
+                bat '''
+                    if not exist target mkdir target
+                    if exist target\\*.jar (
+                        if not exist "%WORKSPACE%\\deployment" mkdir "%WORKSPACE%\\deployment"
+                        copy /Y target\\*.jar "%WORKSPACE%\\deployment\\"
+                    ) else (
+                        echo No JAR file found to deploy.
+                    )
                 '''
             }
         }
     }
 
-   post {
-        success { echo 'Pipeline completed successfully!' }
-        failure { echo 'Pipeline failed. Check the logs for details.' }
+    post {
+        success {
+            echo 'Pipeline completed successfully!'
+        }
+        failure {
+            echo 'Pipeline failed. Check the logs for details.'
+        }
     }
 }
